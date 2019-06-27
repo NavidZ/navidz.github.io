@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset='utf-8'>
+  <meta name='viewport' content='width=device-width'>
+  <title>pointermove vs pointerrawupdate</title>
+</head>
+<body>
+Move your mouse around on the page to compare the average latency of <b>pointermove</b> vs <b>pointerrawupdate</b> events.<br>
+The latency of an event is going to be from the event timestamp to when the js receives the event.<br>
+Your browser should support <a href="https://w3c.github.io/pointerevents/">Pointer Events</a> and getCoalescedEvents API for PointerEvents for this demo to work.
+<div id='results' style='text-align:center; padding: 20px'>
+<table border=1>
+<tr><td></td><td>Count</td><td>Average Latency in ms</td></tr>
+<tr><td><b>pointermove</b></td><td id='pointermove_cnt'>0</td><td id='pointermove_latency'>N/A</td></tr>
+<tr><td><b>pointerrawupdate</b></td><td id='pointerrawupdate_cnt'>0</td><td id='pointerrawupdate_latency'>N/A</td></tr>
+</table>
+</div>
+<input id='reset' type='button' value='Reset results'>
+<div id='error' style='display:none; color:red'>Your browser doesn't seem to support dispatching <b>pointerrrawupdate</b>... :(</div>
+<script>
+
+function get_latency(event) {
+  let l = 0;
+  let now = performance.now();
+  for (let e of event.getCoalescedEvents())
+		l += now - e.timeStamp;
+	return l;
+}
+
+var pointerrawupdate_cnt = 0;
+var pointermove_cnt = 0;
+var pointerrawupdate_coalesced_cnt = 0;
+var pointermove_coalesced_cnt = 0;
+var pointerrawupdate_total_latency = 0;
+var pointermove_total_latency = 0;
+
+document.addEventListener('pointermove', (e) => {
+  if (pointerrawupdate_cnt == 0)
+    document.getElementById('error').style.display = 'block';
+
+  pointermove_cnt++;
+  pointermove_coalesced_cnt += e.getCoalescedEvents().length;
+  pointermove_total_latency += get_latency(e);
+  document.getElementById('pointermove_cnt').innerHTML = pointermove_cnt;
+  document.getElementById('pointermove_latency').innerHTML = Math.round(100*pointermove_total_latency/pointermove_coalesced_cnt)/100;
+});
+
+document.addEventListener('pointerrawupdate', (e) => {
+  pointerrawupdate_cnt++;
+  pointerrawupdate_coalesced_cnt += e.getCoalescedEvents().length;
+  pointerrawupdate_total_latency += get_latency(e);
+  document.getElementById('pointerrawupdate_cnt').innerHTML = pointerrawupdate_cnt;
+  document.getElementById('pointerrawupdate_latency').innerHTML = Math.round(100*pointerrawupdate_total_latency/pointerrawupdate_coalesced_cnt)/100;
+});
+
+document.getElementById('reset').addEventListener('click', () => {
+  pointerrawupdate_cnt = 0;
+  pointermove_cnt = 0;
+  pointerrawupdate_coalesced_cnt = 0;
+  pointermove_coalesced_cnt = 0;
+  pointerrawupdate_total_latency = 0;
+  pointermove_total_latency = 0;
+  document.getElementById('pointermove_cnt').innerHTML = 0;
+  document.getElementById('pointermove_latency').innerHTML = 'N/A';
+  document.getElementById('pointerrawupdate_cnt').innerHTML = 0;
+  document.getElementById('pointerrawupdate_latency').innerHTML = 'N/A';
+});
+
+</script>
+</body>
+</html>
